@@ -66,11 +66,13 @@ jobs:
           OUT="copper_env/bin/${{ matrix.plat }}"
           EX="${{ matrix.exe }}"
           TMP="$(mktemp -d)"
-          export COLANG_TARGET="float-lang/bootstrap/colang.co"
+          # 自举会把 crate 生成到临时目录再 cargo 编，这里必须传绝对路径，
+          # 否则 cargo 会去 $TMP/self/float-lang 找 manifest。
+          export COLANG_TARGET="$(pwd)/float-lang/bootstrap/colang.co"
           export COLANG_MODE=build
           export COLANG_OUT="$TMP/self"
-          export COLANG_CRATE="float-lang"
-          export COPPER_RT="copper_env/lib/colang_rt.rs"
+          export COLANG_CRATE="$(pwd)/float-lang"
+          export COPPER_RT="$(pwd)/copper_env/lib/colang_rt.rs"
           export COLANG_CARGO="$(command -v cargo)"
           "./$OUT/copper${EX}"
           test -x "$TMP/self/target/release/app${EX}"
