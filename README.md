@@ -1,6 +1,6 @@
 # Copper
 
-**Copper**（原 CW Script）—— 一门中文编程语言，出自小方工作室。词法 → 语法 → 字节码 → 虚拟机；另有一条 Rust AOT 通道，把脚本直接编成原生程序。编译器本身也是用 Copper 写的（`bootstrap/colang.co`），能自举。
+**Copper**（铜，原名 CW Script / 代码世界）—— 小方工作室的行式脚本语言。一行一句、缩进成块；变量名可以写中文，指令是英文单词但都有中文文档。词法 → 语法 → 字节码 → 虚拟机；另有一条 Rust AOT 通道，把脚本直接编成原生程序。编译器本身也是用 Copper 写的（`bootstrap/colang.co`），能自举。
 
 - 官网 / 下载：<https://github.com/xiaofangstudio/Copper/releases>
 - 配套 IDE：[Float IDE](https://github.com/xiaofangstudio/Float-IDE)
@@ -72,7 +72,7 @@ print(greet("小红", "晚上好"))
 
 | 能力 | 说明 |
 |---|---|
-| 中文关键字 | `如果 / 否则 / 当 / 重复 / 函数 / 类` 都有，英文写法同时可用 |
+| 中文标识符 | 变量名、函数名、类名都能写中文（`\u4e00-\u9fa5`），关键字仍是英文：`if` / `while` / `repeat` / `fn` / `class` / `ask` / `print` |
 | 函数 | 多参数、默认值（可引用前面的参数）、`return`、递归、先用后定义 |
 | 内联与闭包 | `fn(x) return x + base`，内层函数记住创建时的环境 |
 | 高阶函数 | `data.map` / `filter` / `reduce` / `groupby` / `index_by` / `any` / `all` / `find` / `find_index` |
