@@ -1,0 +1,129 @@
+# Copper 三平台构建：Windows x64 / Linux x64 / macOS arm64。
+# 每个 runner 原生编出四个可执行（aot 与 run/embed），再用 aot 编 colang.co 得到
+# 环境编译器 copper，用 copper 自举出 copper-self，最后按平台打成安装包上传 Release。
+# 用法：push 一个 v* 标签，或在 Actions 里手动 Run workflow。
+name: Build Copper (3 platforms)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            plat: windows-x64
+            exe: ".exe"
+            archive: zip
+          - os: ubuntu-22.04
+            plat: linux-x64
+            exe: ""
+            archive: tar
+          - os: macos-latest
+            plat: macos-arm64
+            exe: ""
+            archive: tar
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "float-lang -> target"
+
+      - name: 编 examples（aot / run / embed）
+        shell: bash
+        run: cargo build --release --examples --manifest-path float-lang/Cargo.toml
+
+      - name: AOT 编 colang.co → copper
+        shell: bash
+        env:
+          COPPER_PARSE_TARGET: float-lang/bootstrap/colang.co
+          COPPER_AOT_MAX_LINES: "400000"
+          COPPER_AOT_MAX_BYTES: "40000000"
+        run: |
+          set -eu
+          OUT="copper_env/bin/${{ matrix.plat }}"
+          EX="${{ matrix.exe }}"
+          mkdir -p "$OUT"
+          "float-lang/target/release/examples/aot${EX}" float-lang/bootstrap/colang.co -o "$OUT/copper${EX}"
+          test -s "$OUT/copper${EX}"
+          chmod +x "$OUT/copper${EX}" || true
+
+      - name: 自举 → copper-self
+        shell: bash
+        run: |
+          set -eu
+          OUT="copper_env/bin/${{ matrix.plat }}"
+          EX="${{ matrix.exe }}"
+          TMP="$(mktemp -d)"
+          export COLANG_TARGET="float-lang/bootstrap/colang.co"
+          export COLANG_MODE=build
+          export COLANG_OUT="$TMP/self"
+          export COLANG_CRATE="float-lang"
+          export COPPER_RT="copper_env/lib/colang_rt.rs"
+          export COLANG_CARGO="$(command -v cargo)"
+          "./$OUT/copper${EX}"
+          test -x "$TMP/self/target/release/app${EX}"
+          cp "$TMP/self/target/release/app${EX}" "$OUT/copper-self${EX}"
+          cp "float-lang/target/release/examples/run${EX}" "$OUT/copper-run${EX}"
+          cp "float-lang/target/release/examples/embed${EX}" "$OUT/copper-embed${EX}"
+          chmod +x "$OUT"/copper* || true
+
+      - name: 冒烟（无参数应报用法并退 1）
+        shell: bash
+        run: |
+          set +e
+          "./copper_env/bin/${{ matrix.plat }}/copper${{ matrix.exe }}" > /tmp/smoke.txt 2>&1
+          rc=$?
+          set -e
+          head -n 3 /tmp/smoke.txt || true
+          test "$rc" -eq 1
+
+      - name: 打包
+        shell: bash
+        run: |
+          set -eu
+          VER="${GITHUB_REF_NAME#v}"
+          [ -n "$VER" ] || VER="0.0.0"
+          STAGE="dist/copper"
+          rm -rf dist
+          mkdir -p "$STAGE/bin/${{ matrix.plat }}" "$STAGE/lib"
+          cp "copper_env/bin/${{ matrix.plat }}/"* "$STAGE/bin/${{ matrix.plat }}/"
+          cp copper_env/lib/colang_rt.rs "$STAGE/lib/"
+          cp copper_env/copper.json "$STAGE/"
+          if [ "${{ matrix.plat }}" = "windows-x64" ]; then
+            cp copper_env/bin/co.cmd copper_env/bin/copper.cmd "$STAGE/bin/"
+            (cd dist && powershell -NoProfile -Command "Compress-Archive -Path 'copper' -DestinationPath 'Copper-${VER}-${{ matrix.plat }}.zip' -Force")
+          else
+            cp copper_env/bin/co.sh copper_env/bin/copper.sh "$STAGE/bin/"
+            chmod +x "$STAGE/bin/co.sh" "$STAGE/bin/copper.sh"
+            tar -czf "dist/Copper-${VER}-${{ matrix.plat }}.tar.gz" -C dist copper
+          fi
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Copper-${{ matrix.plat }}
+          path: dist/Copper-*
+          if-no-files-found: error
+
+      - name: 上传到 Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Copper-*
+          fail_on_unmatched_files: true
+          body_path: RELEASE_NOTES.md
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

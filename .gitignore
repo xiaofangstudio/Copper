@@ -1,0 +1,26 @@
+# ===== Rust 构建产物 =====
+target/
+**/target/
+
+# ===== 本地调试输出（每次跑测试都会重新生成）=====
+float-lang/*.txt
+float-lang/bootstrap/*.exe
+float-lang/bootstrap/*.json
+float-lang/bootstrap/*.txt
+float-lang/bootstrap/*.rs
+float-lang/bootstrap/*.ps1
+float-lang/bootstrap/*.py
+
+# ===== 自举 / 压测 / 调试的中间目录（约 280MB，需要时本机重新生成）=====
+float-lang/_selfhost/
+float-lang/_bench/
+float-lang/_cls/
+float-lang/_fuzz/
+float-lang/_scope/
+float-lang/_silent/
+float-lang/_stress/
+float-lang/_backup_*/
+float-lang/_verified_*/
+
+# ===== 本机 PATH 备份（不随仓库走）=====
+copper_env/_path_backup_*.txt
