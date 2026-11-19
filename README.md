@@ -1,6 +1,6 @@
 # Copper
 
-**Copper**（原 CW Script）—— 小方工作室的中文编程语言：词法 → 语法 → 字节码 → 虚拟机，另有一条 Rust AOT 通道，把脚本直接编成原生程序。编译器本身也是用 Copper 写的（`bootstrap/colang.co`），能自举。
+**Copper**（原 CW Script）—— 一门中文编程语言，出自小方工作室。词法 → 语法 → 字节码 → 虚拟机；另有一条 Rust AOT 通道，把脚本直接编成原生程序。编译器本身也是用 Copper 写的（`bootstrap/colang.co`），能自举。
 
 - 官网 / 下载：<https://github.com/xiaofangstudio/Copper/releases>
 - 配套 IDE：[Float IDE](https://github.com/xiaofangstudio/Float-IDE)
