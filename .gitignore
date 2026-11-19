@@ -2,6 +2,9 @@
 target/
 **/target/
 
+# ===== 本地打包目录（installer 由 CI 产出）=====
+dist/
+
 # ===== 本地调试输出（每次跑测试都会重新生成）=====
 float-lang/*.txt
 float-lang/bootstrap/*.exe
